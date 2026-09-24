@@ -32,6 +32,7 @@ app.get("/health", (req, res) => res.json({
 
 // Routes
 app.use("/api/orders", orderRoutes);
+app.use("/", orderRoutes);
 
 // Global error handler
 app.use((err, req, res, next) => {

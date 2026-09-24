@@ -4,7 +4,7 @@
 ### 1. Thông tin sinh viên
 - **Họ và tên:** Nguyễn Thái Tuấn
 - **Mã sinh viên (MSV):** N23DCPT054
-- **Lớp / Học phần:** Thực hành Web (Web Practice 2a)
+- **Lớp / Học phần:** D23CQPTUD01-N
 
 ---
 

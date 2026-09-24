@@ -18,8 +18,9 @@ app.use(limiter);
 // Health check
 app.get("/health", (req, res) => res.json({ status: "ok", gateway: true }));
 
-// Route: /products/* → Product Service
-app.use("/api/products", createProxyMiddleware({
+// Route: /api/products → Product Service
+app.use(createProxyMiddleware({
+  pathFilter: "/api/products",
   target: process.env.PRODUCT_SERVICE_URL || "http://localhost:3001",
   changeOrigin: true,
   on: {
@@ -27,8 +28,9 @@ app.use("/api/products", createProxyMiddleware({
   }
 }));
 
-// Route: /orders/* → Order Service
-app.use("/api/orders", createProxyMiddleware({
+// Route: /api/orders → Order Service
+app.use(createProxyMiddleware({
+  pathFilter: "/api/orders",
   target: process.env.ORDER_SERVICE_URL || "http://localhost:3002",
   changeOrigin: true,
   on: {

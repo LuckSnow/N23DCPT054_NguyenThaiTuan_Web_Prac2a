@@ -35,6 +35,7 @@ app.get("/health", (req, res) => res.json({
 }));
 
 app.use("/api/products", productRoutes);
+app.use("/", productRoutes);
 
 // ─── Global Error Handler (ĐẶT CUỐI CÙNG) ──
 app.use(errorHandler);
