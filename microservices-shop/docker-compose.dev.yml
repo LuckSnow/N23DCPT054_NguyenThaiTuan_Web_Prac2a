@@ -1,0 +1,33 @@
+# docker-compose.dev.yml — Override cho môi trường dev
+version: "3.9"
+
+services:
+  product-service:
+    build:
+      context: ./product-service
+      target: builder
+    volumes:
+      - ./product-service/src:/app/src
+    command: ["npm", "run", "dev"]
+    environment:
+      NODE_ENV: development
+
+  order-service:
+    build:
+      context: ./order-service
+      target: builder
+    volumes:
+      - ./order-service/src:/app/src
+    command: ["npm", "run", "dev"]
+    environment:
+      NODE_ENV: development
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+      target: builder
+    volumes:
+      - ./api-gateway/src:/app/src
+    command: ["npm", "run", "dev"]
+    environment:
+      NODE_ENV: development
