@@ -1,16 +1,11 @@
 {
   "info": {
-    "_postman_id": "lab2-microservices-collection-uuid",
-    "name": "Lab2 Microservices",
-    "description": "Collection kiểm thử đầy đủ toàn bộ hệ thống Lab 2a Microservices (Product Service, Order Service, Auth Service, API Gateway, JWT Authentication, Redis Cache)",
+    "_postman_id": "lab2-microservices-collection-v2",
+    "name": "Lab2 Microservices - Nguyễn Thái Tuấn",
+    "description": "Collection kiểm thử toàn diện hệ thống Microservices Lab 2a (API Gateway, Product Service, Order Service, Auth Service, Redis Cache, PostgreSQL, MongoDB)",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
-    {
-      "key": "base_url",
-      "value": "http://localhost:3001",
-      "type": "string"
-    },
     {
       "key": "gateway_url",
       "value": "http://localhost:3000",
@@ -20,18 +15,89 @@
       "key": "jwt_token",
       "value": "",
       "type": "string"
+    },
+    {
+      "key": "product_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "order_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "order_code",
+      "value": "",
+      "type": "string"
     }
   ],
   "item": [
     {
-      "name": "1. Auth Service (Yêu cầu 1)",
+      "name": "0. System & Health Check",
       "item": [
         {
-          "name": "POST /api/auth/register - Đăng ký tài khoản",
+          "name": "GET API Gateway Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/health",
+              "host": ["{{gateway_url}}"],
+              "path": ["health"]
+            }
+          }
+        },
+        {
+          "name": "GET Product Service Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/api/products/health",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "products", "health"]
+            }
+          }
+        },
+        {
+          "name": "GET Order Service Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/api/orders/health",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "orders", "health"]
+            }
+          }
+        },
+        {
+          "name": "GET Auth Service Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/api/auth/health",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "auth", "health"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "1. Auth Service",
+      "item": [
+        {
+          "name": "POST /api/auth/register - Đăng ký tài khoản mới",
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -45,7 +111,7 @@
           }
         },
         {
-          "name": "POST /api/auth/login - Đăng nhập (Lấy JWT Token)",
+          "name": "POST /api/auth/login - Đăng nhập (Tự động lưu Token)",
           "event": [
             {
               "listen": "test",
@@ -54,6 +120,7 @@
                   "const res = pm.response.json();",
                   "if (res.data && res.data.accessToken) {",
                   "    pm.collectionVariables.set('jwt_token', res.data.accessToken);",
+                  "    console.log('JWT Token saved successfully:', res.data.accessToken);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -63,7 +130,10 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -77,11 +147,14 @@
           }
         },
         {
-          "name": "GET /api/auth/me - Xem thông tin user hiện tại (Bearer Token)",
+          "name": "GET /api/auth/me - Xem thông tin tài khoản (Bearer Token)",
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
             ],
             "url": {
               "raw": "{{gateway_url}}/api/auth/me",
@@ -93,10 +166,10 @@
       ]
     },
     {
-      "name": "2. Products Service",
+      "name": "2. Product Service",
       "item": [
         {
-          "name": "GET /api/products - Phân trang & Cache Redis",
+          "name": "GET /api/products - Danh sách sản phẩm (Phân trang & Cache Redis)",
           "request": {
             "method": "GET",
             "header": [],
@@ -105,104 +178,223 @@
               "host": ["{{gateway_url}}"],
               "path": ["api", "products"],
               "query": [
-                { "key": "page", "value": "1" },
-                { "key": "limit", "value": "5" }
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "5"
+                }
               ]
             }
           }
         },
         {
-          "name": "POST /api/products - Tạo sản phẩm (Xóa cache)",
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"Test Product\",\n  \"price\": 100,\n  \"stock\": 10,\n  \"description\": \"Sản phẩm test\"\n}"
-            },
-            "url": {
-              "raw": "{{gateway_url}}/api/products",
-              "host": ["{{gateway_url}}"],
-              "path": ["api", "products"]
-            }
-          }
-        },
-        {
-          "name": "POST /api/products - Validation thất bại (422)",
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"\",\n  \"price\": -1\n}"
-            },
-            "url": {
-              "raw": "{{gateway_url}}/api/products",
-              "host": ["{{gateway_url}}"],
-              "path": ["api", "products"]
-            }
-          }
-        },
-        {
-          "name": "GET /api/products/:id - Tìm kiếm không tồn tại (404)",
+          "name": "GET /api/products - Tìm kiếm và lọc theo khoảng giá",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{gateway_url}}/api/products/999",
-              "host": ["{{gateway_url}}"],
-              "path": ["api", "products", "999"]
-            }
-          }
-        },
-        {
-          "name": "GET /api/products - Tìm kiếm và lọc theo giá",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{gateway_url}}/api/products?search=iphone&minPrice=20000000",
+              "raw": "{{gateway_url}}/api/products?search=iPhone&minPrice=20000000&maxPrice=35000000",
               "host": ["{{gateway_url}}"],
               "path": ["api", "products"],
               "query": [
-                { "key": "search", "value": "iphone" },
-                { "key": "minPrice", "value": "20000000" }
+                {
+                  "key": "search",
+                  "value": "iPhone"
+                },
+                {
+                  "key": "minPrice",
+                  "value": "20000000"
+                },
+                {
+                  "key": "maxPrice",
+                  "value": "35000000"
+                }
               ]
             }
           }
         },
         {
-          "name": "DELETE /api/products/:id - Xóa mềm (Soft Delete)",
+          "name": "GET /api/products/:id - Chi tiết sản phẩm",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/api/products/{{product_id}}",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "products", "{{product_id}}"]
+            }
+          }
+        },
+        {
+          "name": "POST /api/products - Tạo sản phẩm mới (Tự động lưu product_id)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.id) {",
+                  "    pm.collectionVariables.set('product_id', res.data.id.toString());",
+                  "    console.log('Saved product_id:', res.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"MacBook Pro M3 Max 16 inch\",\n  \"description\": \"Apple M3 Max, 36GB Unified RAM, 1TB SSD\",\n  \"price\": 79990000,\n  \"stock\": 15,\n  \"categoryId\": 1\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/api/products",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "products"]
+            }
+          }
+        },
+        {
+          "name": "PUT /api/products/:id - Cập nhật sản phẩm (Xóa cache)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"MacBook Pro M3 Max 16 inch (Đã cập nhật)\",\n  \"price\": 76990000,\n  \"stock\": 20\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/api/products/{{product_id}}",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "products", "{{product_id}}"]
+            }
+          }
+        },
+        {
+          "name": "POST /api/products/:id/image - Upload ảnh sản phẩm (Multipart)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{gateway_url}}/api/products/{{product_id}}/image",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "products", "{{product_id}}", "image"]
+            }
+          }
+        },
+        {
+          "name": "DELETE /api/products/:id - Xóa mềm sản phẩm (Soft Delete)",
           "request": {
             "method": "DELETE",
             "header": [],
             "url": {
-              "raw": "{{gateway_url}}/api/products/1",
+              "raw": "{{gateway_url}}/api/products/{{product_id}}",
               "host": ["{{gateway_url}}"],
-              "path": ["api", "products", "1"]
+              "path": ["api", "products", "{{product_id}}"]
+            }
+          }
+        },
+        {
+          "name": "POST /api/products - Kiểm thử Validation thất bại (422)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"\",\n  \"price\": -5000\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/api/products",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "products"]
+            }
+          }
+        },
+        {
+          "name": "GET /api/products/:id - Kiểm thử không tìm thấy (404)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/api/products/999999",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "products", "999999"]
             }
           }
         }
       ]
     },
     {
-      "name": "3. Orders Service (Yêu cầu 2: Cần JWT Token)",
+      "name": "3. Order Service",
       "item": [
         {
-          "name": "POST /api/orders - Tạo đơn hàng (Có JWT Bearer Token)",
+          "name": "POST /api/orders - Tạo đơn hàng mới (Tự động lưu order_id & order_code)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.data) {",
+                  "    if (res.data._id) {",
+                  "        pm.collectionVariables.set('order_id', res.data._id);",
+                  "        console.log('Saved order_id:', res.data._id);",
+                  "    }",
+                  "    if (res.data.orderCode) {",
+                  "        pm.collectionVariables.set('order_code', res.data.orderCode);",
+                  "        console.log('Saved order_code:', res.data.orderCode);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"customerId\": 1,\n  \"customerName\": \"Nguyễn Thái Tuấn\",\n  \"customerEmail\": \"tuan@example.com\",\n  \"items\": [\n    {\n      \"productId\": 1,\n      \"productName\": \"iPhone 15 Pro\",\n      \"price\": 27990000,\n      \"quantity\": 1\n    }\n  ],\n  \"shippingAddress\": {\n    \"street\": \"123 Đường ABC\",\n    \"city\": \"Hồ Chí Minh\",\n    \"district\": \"Quận 1\"\n  },\n  \"note\": \"Giao giờ hành chính\"\n}"
+              "raw": "{\n  \"customerId\": 1,\n  \"customerName\": \"Nguyễn Thái Tuấn\",\n  \"customerEmail\": \"tuan@example.com\",\n  \"items\": [\n    {\n      \"productId\": 1,\n      \"productName\": \"iPhone 15 Pro\",\n      \"price\": 27990000,\n      \"quantity\": 1\n    },\n    {\n      \"productId\": 2,\n      \"productName\": \"Ốp lưng MagSafe\",\n      \"price\": 990000,\n      \"quantity\": 2\n    }\n  ],\n  \"shippingAddress\": {\n    \"street\": \"97 Man Thiện, Phường Hiệp Phú\",\n    \"city\": \"Hồ Chí Minh\",\n    \"district\": \"Thành phố Thủ Đức\"\n  },\n  \"note\": \"Giao giờ hành chính, gọi trước khi đến\"\n}"
             },
             "url": {
               "raw": "{{gateway_url}}/api/orders",
@@ -212,15 +404,18 @@
           }
         },
         {
-          "name": "POST /api/orders - Thất bại khi chưa đăng nhập (401)",
+          "name": "POST /api/orders - Kiểm thử chưa đăng nhập (401 Unauthorized)",
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"customerId\": 1,\n  \"customerName\": \"Nguyễn Thái Tuấn\",\n  \"items\": []\n}"
+              "raw": "{\n  \"customerId\": 1,\n  \"items\": []\n}"
             },
             "url": {
               "raw": "{{gateway_url}}/api/orders",
@@ -230,39 +425,244 @@
           }
         },
         {
-          "name": "GET /api/orders/customer/:customerId - Lấy đơn hàng theo khách hàng",
+          "name": "POST /api/orders - Kiểm thử Validation đơn hàng trống (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": 1,\n  \"customerName\": \"\",\n  \"items\": []\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/api/orders",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "orders"]
+            }
+          }
+        },
+        {
+          "name": "GET /api/orders - Danh sách đơn hàng (Phân trang & Lọc trạng thái)",
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/api/orders?page=1&limit=10&status=pending",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "orders"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "status",
+                  "value": "pending"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /api/orders/:id - Chi tiết theo Mongo ObjectId (order_id)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/api/orders/{{order_id}}",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "orders", "{{order_id}}"]
+            }
+          }
+        },
+        {
+          "name": "GET /api/orders/:code - Chi tiết theo Mã đơn hàng (order_code)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/api/orders/{{order_code}}",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "orders", "{{order_code}}"]
+            }
+          }
+        },
+        {
+          "name": "GET /api/orders/customer/:customerId - Danh sách theo mã khách hàng",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
             ],
             "url": {
               "raw": "{{gateway_url}}/api/orders/customer/1?page=1&limit=10",
               "host": ["{{gateway_url}}"],
               "path": ["api", "orders", "customer", "1"],
               "query": [
-                { "key": "page", "value": "1" },
-                { "key": "limit", "value": "10" }
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
               ]
             }
           }
         },
         {
-          "name": "PUT /api/orders/:id/status - Cập nhật trạng thái đơn hàng",
+          "name": "PUT /api/orders/:id/status - Cập nhật trạng thái sang confirmed",
           "request": {
             "method": "PUT",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"status\": \"confirmed\"\n}"
             },
             "url": {
-              "raw": "{{gateway_url}}/api/orders/ORDER_ID/status",
+              "raw": "{{gateway_url}}/api/orders/{{order_id}}/status",
               "host": ["{{gateway_url}}"],
-              "path": ["api", "orders", "ORDER_ID", "status"]
+              "path": ["api", "orders", "{{order_id}}", "status"]
+            }
+          }
+        },
+        {
+          "name": "PUT /api/orders/:code/status - Cập nhật trạng thái bằng orderCode (processing)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"processing\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/api/orders/{{order_code}}/status",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "orders", "{{order_code}}", "status"]
+            }
+          }
+        },
+        {
+          "name": "PUT /api/orders/:id/status - Cập nhật trạng thái sang shipped",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"shipped\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/api/orders/{{order_id}}/status",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "orders", "{{order_id}}", "status"]
+            }
+          }
+        },
+        {
+          "name": "PUT /api/orders/:id/status - Cập nhật trạng thái sang delivered",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"delivered\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/api/orders/{{order_id}}/status",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "orders", "{{order_id}}", "status"]
+            }
+          }
+        },
+        {
+          "name": "PUT /api/orders/:id/status - Hủy đơn hàng (cancelled)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"cancelled\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/api/orders/{{order_id}}/status",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "orders", "{{order_id}}", "status"]
             }
           }
         }

@@ -1,22 +1,42 @@
+# ==========================================
+# GITIGNORE CHUNG CHO TOÀN BỘ REPOSITORY
+# ==========================================
+
 # Dependencies
 node_modules/
 */node_modules/
+**/node_modules/
 
-# Environment variables & secrets (KHÔNG commit file chứa secret/password)
+# Environment variables & secrets (Bảo mật - KHÔNG commit file secret)
 .env
-.env.local
-.env.*.local
+.env.*
 *.env
+**/.env
+**/.env.*
 !*.env.example
+!**/.env.example
 
 # Logs
-logs
+logs/
 *.log
+**/*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# IDE & Editor files
+# Uploads & Temporary files
+uploads/
+**/uploads/
+scratch/
+brain/
+
+# Prisma & Build outputs
+dist/
+build/
+/generated/prisma
+**/generated/prisma
+
+# IDE & Tooling configs
 .vscode/
 .idea/
 .agents/
