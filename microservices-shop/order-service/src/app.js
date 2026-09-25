@@ -24,7 +24,7 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
 app.get("/api-docs.json", (req, res) => res.json(swaggerSpec));
 
 // Health check
-app.get("/health", (req, res) => res.json({
+app.get(["/health", "/api/orders/health"], (req, res) => res.json({
   status: "ok",
   service: process.env.SERVICE_NAME || "order-service",
   uptime: process.uptime()

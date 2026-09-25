@@ -2,6 +2,8 @@
 const router = require("express").Router();
 const {
   createOrder,
+  getAllOrders,
+  getOrderById,
   getOrdersByCustomer,
   updateOrderStatus
 } = require("../controllers/orderController");
@@ -44,6 +46,8 @@ const {
  *         description: Đơn hàng tạo thành công
  */
 router.post("/", createOrder);
+router.get("/", getAllOrders);
+router.get("/:id", getOrderById);
 
 /**
  * @swagger

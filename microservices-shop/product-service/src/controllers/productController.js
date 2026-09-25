@@ -112,8 +112,12 @@ const getProducts = async (req, res, next) => {
 // ──────────────────────────────────
 const getProductById = async (req, res, next) => {
   try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ success: false, message: "ID sản phẩm phải là một số hợp lệ" });
+    }
     const product = await prisma.product.findUnique({
-      where: { id: parseInt(req.params.id) },
+      where: { id },
       include: { category: true },
     });
     if (!product) return res.status(404).json({ success: false, message: "Không tìm thấy sản phẩm" });
@@ -147,8 +151,12 @@ const createProduct = async (req, res, next) => {
 // ──────────────────────────────────
 const updateProduct = async (req, res, next) => {
   try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ success: false, message: "ID sản phẩm phải là một số hợp lệ" });
+    }
     const product = await prisma.product.update({
-      where: { id: parseInt(req.params.id) },
+      where: { id },
       data: req.body,
       include: { category: true }
     });
@@ -165,8 +173,12 @@ const updateProduct = async (req, res, next) => {
 // ──────────────────────────────────
 const deleteProduct = async (req, res, next) => {
   try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ success: false, message: "ID sản phẩm phải là một số hợp lệ" });
+    }
     await prisma.product.update({
-      where: { id: parseInt(req.params.id) },
+      where: { id },
       data: { isActive: false } // Soft delete — không xoá thật
     });
 

@@ -1,5 +1,5 @@
 # BÁO CÁO BÀI TẬP THỰC HÀNH LAB 2a
-## HỆ THỐNG THƯƠNG MẠI ĐIỆN TỬ THEO KIẾN TRÚC MICROSERVICES (NODE.JS)
+## BACKEND VỚI NODE.JS — MICROSERVICES
 
 ---
 
@@ -7,7 +7,7 @@
 - **Họ và tên:** Nguyễn Thái Tuấn
 - **Mã sinh viên (MSV):** N23DCPT054
 - **Lớp:** D23CQPTUD01-N
-- **Môn học:** Phát triển ứng dụng Web (Thực hành Lab 2a)
+- **Môn học:** Lập Trình Web
 
 ---
 
@@ -60,7 +60,6 @@ N23DCPT054_NguyenThaiTuan_Web_Prac2a/
     ├── .env.example                            # Mẫu cấu hình tất cả biến môi trường cho các service
     ├── docker-compose.yml                      # Cấu hình Docker Compose khởi chạy 7 container đồng bộ
     ├── docker-compose.dev.yml                  # Cấu hình Docker Compose môi trường phát triển (Hot reload)
-    ├── Lab2a.pdf                               # Đề bài & tài liệu yêu cầu thực hành
     │
     ├── api-gateway/                            # [Service] API Gateway (Port 3000)
     │   ├── Dockerfile                          # Multi-stage Docker build
@@ -134,10 +133,9 @@ N23DCPT054_NguyenThaiTuan_Web_Prac2a/
 
 ### 4. HƯỚNG DẪN CÀI ĐẶT VÀ KHỞI CHẠY (QUAN TRỌNG)
 
-Khi người khác clone repository này về máy, có thể lựa chọn 1 trong 2 phương pháp triển khai dưới đây:
+Khi clone repository này về máy, có thể lựa chọn 1 trong 2 phương pháp triển khai dưới đây:
 
 #### 🟢 CÁCH 1: TRIỂN KHAI NHANH BẰNG DOCKER COMPOSE (KHUYÊN DÙNG)
-Cách này đơn giản và chuẩn xác nhất, không cần cài đặt riêng lẻ PostgreSQL, MongoDB hay Redis trên máy cục bộ. Docker sẽ tự động tải các image chuẩn, xây dựng các container và liên kết mạng nội bộ giữa các microservices.
 
 ##### Bước 1: Clone mã nguồn về máy
 ```bash
@@ -173,7 +171,7 @@ Nếu tất cả các container hiển thị trạng thái `Up` hoặc `healthy`
 ---
 
 #### 🟡 CÁCH 2: TRIỂN KHAI THỦ CÔNG (LOCAL DEVELOPMENT VỚI NODE.JS)
-Dành cho trường hợp muốn phát triển trực tiếp từng service hoặc kết nối Cloud Database (như Supabase & MongoDB Atlas).
+
 
 ##### Yêu cầu môi trường:
 - Node.js version 18 trở lên (`node -v`)
@@ -231,7 +229,7 @@ npm run dev        # Chạy trên port 3000
 
 ### 5. HƯỚNG DẪN KIỂM THỬ HỆ THỐNG VỚI POSTMAN
 
-Toàn bộ kịch bản kiểm thử đã được chuẩn bị sẵn trong tệp [postman/Lab2.postman_collection.json](file:///d:/N23DCPT054_NguyenThaiTuan_Web_Prac2a/postman/Lab2.postman_collection.json).
+Kiểm thử đã được chuẩn bị sẵn trong tệp [postman/Lab2.postman_collection.json](file:///d:/N23DCPT054_NguyenThaiTuan_Web_Prac2a/postman/Lab2.postman_collection.json).
 
 #### 5.1. Import Collection vào Postman:
 1. Mở phần mềm **Postman**.
@@ -275,16 +273,3 @@ Hệ thống tích hợp sẵn tài liệu chuẩn OpenAPI 3.0 với giao diện
 - **Order Service API Docs:** [http://localhost:3002/api-docs](http://localhost:3002/api-docs)
 - **Auth Service API Docs:** [http://localhost:3003/api-docs](http://localhost:3003/api-docs)
 
----
-
-### 7. CÁC ĐIỂM KỸ THUẬT VÀ KHẮC PHỤC LỖI (TROUBLESHOOTING)
-
-1. **Khắc phục lỗi Cast to ObjectId trong API Order Service:**
-   - *Nguyên nhân trước đây:* Mongoose dùng hàm `findByIdAndUpdate(req.params.id)`. Khi client gửi lên chuỗi chữ không hợp lệ với chuẩn 24 hex characters của MongoDB (như mã `ORD-...` hoặc chuỗi tĩnh `"ORDER_ID"`), Mongoose phát sinh ngoại lệ `CastError` và trả về mã lỗi 500.
-   - *Giải pháp đã thực hiện:* Kiểm tra tính hợp lệ bằng `mongoose.Types.ObjectId.isValid(id)`. Nếu là ObjectId hợp lệ thì truy vấn theo `_id`, nếu không thì tự động truy vấn theo trường `orderCode`. Nếu không tìm thấy thì trả về mã `404 Not Found` sạch sẽ kèm thông báo rõ ràng, không làm gián đoạn hệ thống.
-
-2. **Khắc phục kết nối Supabase PostgreSQL Migration:**
-   - Sử dụng Session Pooler (port `5432`) cho việc chạy migration DDL của Prisma để tránh lỗi không hỗ trợ advisory locks của Transaction Pooler (port `6543`).
-
-3. **Bảo mật và an toàn mã nguồn:**
-   - Hệ thống chỉ duy trì **1 file `.gitignore` duy nhất tại thư mục gốc**, cấu hình chặn toàn bộ các file nhạy cảm: `.env`, `.env.local`, file logs, khóa bí mật, ảnh upload và `node_modules` trước khi commit lên Git repository.

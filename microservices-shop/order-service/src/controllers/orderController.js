@@ -34,6 +34,54 @@ const createOrder = async (req, res, next) => {
   }
 };
 
+// Lấy danh sách tất cả đơn hàng, có phân trang và lọc theo trạng thái
+const getAllOrders = async (req, res, next) => {
+  try {
+    const { page = 1, limit = 10, status, customerId } = req.query;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const filter = {};
+    if (status) filter.status = status;
+    if (customerId) filter.customerId = parseInt(customerId);
+
+    const [orders, total] = await Promise.all([
+      Order.find(filter).sort({ createdAt: -1 }).skip(skip).limit(parseInt(limit)),
+      Order.countDocuments(filter)
+    ]);
+
+    res.json({
+      success: true,
+      data: orders,
+      pagination: {
+        total,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalPages: Math.ceil(total / parseInt(limit))
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Lấy chi tiết đơn hàng theo _id hoặc orderCode
+const getOrderById = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const query = mongoose.Types.ObjectId.isValid(id)
+      ? { _id: id }
+      : { orderCode: id };
+
+    const order = await Order.findOne(query);
+    if (!order) {
+      return res.status(404).json({ success: false, message: "Không tìm thấy đơn hàng" });
+    }
+    res.json({ success: true, data: order });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // Lấy đơn hàng của customer, có phân trang
 const getOrdersByCustomer = async (req, res, next) => {
   try {
@@ -99,4 +147,10 @@ const updateOrderStatus = async (req, res, next) => {
   }
 };
 
-module.exports = { createOrder, getOrdersByCustomer, updateOrderStatus };
+module.exports = {
+  createOrder,
+  getAllOrders,
+  getOrderById,
+  getOrdersByCustomer,
+  updateOrderStatus
+};

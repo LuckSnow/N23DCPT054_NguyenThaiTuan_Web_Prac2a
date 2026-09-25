@@ -172,12 +172,16 @@ const prisma = new PrismaClient();
 router.post("/:id/image", upload.single("image"), async (req, res, next) => {
   try {
     const { id } = req.params;
+    const numId = parseInt(id);
+    if (isNaN(numId)) {
+      return res.status(400).json({ success: false, message: "ID sản phẩm phải là một số hợp lệ" });
+    }
     if (!req.file) {
       return res.status(400).json({ success: false, message: "Vui lòng chọn file ảnh để tải lên" });
     }
     const imageUrl = `/uploads/${req.file.filename}`;
     const product = await prisma.product.update({
-      where: { id: parseInt(id) },
+      where: { id: numId },
       data: { imageUrl }
     });
     res.json({
