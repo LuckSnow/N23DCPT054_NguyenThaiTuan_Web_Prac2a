@@ -7,9 +7,12 @@ const swaggerUi = require("swagger-ui-express");
 const swaggerSpec = require("./swagger/swagger");
 const productRoutes = require("./routes/productRoutes");
 const errorHandler = require("./middleware/errorHandler");
+const path = require("path");
 require("dotenv").config();
 
 const app = express();
+
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 // ─── Security & Logging Middleware ───────────
 app.use(helmet()); // Bảo mật HTTP headers

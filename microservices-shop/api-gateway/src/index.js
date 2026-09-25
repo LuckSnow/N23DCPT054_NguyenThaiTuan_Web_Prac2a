@@ -4,6 +4,7 @@ const { createProxyMiddleware } = require("http-proxy-middleware");
 const rateLimit = require("express-rate-limit");
 const cors = require("cors");
 const helmet = require("helmet");
+const authenticate = require("./middleware/auth");
 require("dotenv").config();
 
 const app = express();
@@ -18,7 +19,17 @@ app.use(limiter);
 // Health check
 app.get("/health", (req, res) => res.json({ status: "ok", gateway: true }));
 
-// Route: /api/products → Product Service
+// ─── Route: /api/auth → Auth Service ──────────
+app.use(createProxyMiddleware({
+  pathFilter: "/api/auth",
+  target: process.env.AUTH_SERVICE_URL || "http://localhost:3003",
+  changeOrigin: true,
+  on: {
+    error: (err, req, res) => res.status(503).json({ message: "Auth Service không khả dụng" })
+  }
+}));
+
+// ─── Route: /api/products → Product Service ───
 app.use(createProxyMiddleware({
   pathFilter: "/api/products",
   target: process.env.PRODUCT_SERVICE_URL || "http://localhost:3001",
@@ -28,7 +39,8 @@ app.use(createProxyMiddleware({
   }
 }));
 
-// Route: /api/orders → Order Service
+// ─── Route: /api/orders → Order Service (Yêu cầu 2: Xác thực JWT) ───
+app.use("/api/orders", authenticate);
 app.use(createProxyMiddleware({
   pathFilter: "/api/orders",
   target: process.env.ORDER_SERVICE_URL || "http://localhost:3002",

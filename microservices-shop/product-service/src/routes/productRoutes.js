@@ -140,4 +140,54 @@ router.put("/:id", updateProduct);
  */
 router.delete("/:id", deleteProduct);
 
+const upload = require("../middleware/upload");
+const { PrismaClient } = require("@prisma/client");
+const prisma = new PrismaClient();
+
+/**
+ * @swagger
+ * /api/products/{id}/image:
+ *   post:
+ *     summary: Tải ảnh sản phẩm lên
+ *     tags: [Products]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: integer }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               image:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       200:
+ *         description: Tải ảnh lên thành công
+ */
+router.post("/:id/image", upload.single("image"), async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: "Vui lòng chọn file ảnh để tải lên" });
+    }
+    const imageUrl = `/uploads/${req.file.filename}`;
+    const product = await prisma.product.update({
+      where: { id: parseInt(id) },
+      data: { imageUrl }
+    });
+    res.json({
+      success: true,
+      message: "Tải ảnh lên thành công",
+      data: { id: product.id, imageUrl: product.imageUrl }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;

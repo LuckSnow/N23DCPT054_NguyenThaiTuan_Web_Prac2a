@@ -10,7 +10,7 @@ volumes:
   mongo_data:
 
 services:
-  # ─── Databases ────────────────────────────
+  # ─── Databases & Cache ────────────────────
   postgres:
     image: postgres:15-alpine
     container_name: postgres_db
@@ -42,6 +42,13 @@ services:
       - "27017:27017"
     networks: [microservices-net]
 
+  redis:
+    image: redis:7-alpine
+    container_name: redis_cache
+    ports:
+      - "6379:6379"
+    networks: [microservices-net]
+
   # ─── Application Services ─────────────────
   product-service:
     build: ./product-service
@@ -51,10 +58,12 @@ services:
         required: false
     environment:
       DATABASE_URL: postgresql://admin:secret@postgres:5432/products_db
+      REDIS_HOST: redis
     ports:
       - "3001:3001"
     depends_on:
       postgres: { condition: service_healthy }
+      redis: { condition: service_started }
     networks: [microservices-net]
 
   order-service:
@@ -70,6 +79,22 @@ services:
     depends_on: [mongo]
     networks: [microservices-net]
 
+  auth-service:
+    build: ./auth-service
+    container_name: auth_service
+    env_file:
+      - path: ./auth-service/.env
+        required: false
+    environment:
+      DATABASE_URL: postgresql://admin:secret@postgres:5432/products_db?schema=auth_service
+      JWT_SECRET: your-super-secret-random-string-at-least-32-chars
+      REFRESH_SECRET: your-super-refresh-secret-string-at-least-32-chars
+    ports:
+      - "3003:3003"
+    depends_on:
+      postgres: { condition: service_healthy }
+    networks: [microservices-net]
+
   # ─── API Gateway ──────────────────────────
   api-gateway:
     build: ./api-gateway
@@ -79,5 +104,7 @@ services:
     environment:
       PRODUCT_SERVICE_URL: http://product-service:3001
       ORDER_SERVICE_URL: http://order-service:3002
-    depends_on: [product-service, order-service]
+      AUTH_SERVICE_URL: http://auth-service:3003
+      JWT_SECRET: your-super-secret-random-string-at-least-32-chars
+    depends_on: [product-service, order-service, auth-service]
     networks: [microservices-net]

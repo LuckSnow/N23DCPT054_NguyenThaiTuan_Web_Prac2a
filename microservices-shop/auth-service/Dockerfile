@@ -14,5 +14,5 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/prisma ./prisma
 COPY src ./src
 COPY package.json ./
-EXPOSE 3001
+EXPOSE 3003
 CMD ["node", "src/index.js"]

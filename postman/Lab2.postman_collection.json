@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "lab2-microservices-collection-uuid",
     "name": "Lab2 Microservices",
-    "description": "Collection kiểm thử API cho Lab 2a Microservices (Product Service, Order Service, API Gateway)",
+    "description": "Collection kiểm thử đầy đủ toàn bộ hệ thống Lab 2a Microservices (Product Service, Order Service, Auth Service, API Gateway, JWT Authentication, Redis Cache)",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -15,20 +15,94 @@
       "key": "gateway_url",
       "value": "http://localhost:3000",
       "type": "string"
+    },
+    {
+      "key": "jwt_token",
+      "value": "",
+      "type": "string"
     }
   ],
   "item": [
     {
-      "name": "Products",
+      "name": "1. Auth Service (Yêu cầu 1)",
       "item": [
         {
-          "name": "GET /api/products - Phân trang",
+          "name": "POST /api/auth/register - Đăng ký tài khoản",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"tuan@example.com\",\n  \"password\": \"password123\",\n  \"name\": \"Nguyễn Thái Tuấn\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/api/auth/register",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "POST /api/auth/login - Đăng nhập (Lấy JWT Token)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.accessToken) {",
+                  "    pm.collectionVariables.set('jwt_token', res.data.accessToken);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"tuan@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/api/auth/login",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "GET /api/auth/me - Xem thông tin user hiện tại (Bearer Token)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/api/auth/me",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "auth", "me"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Products Service",
+      "item": [
+        {
+          "name": "GET /api/products - Phân trang & Cache Redis",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/api/products?page=1&limit=5",
-              "host": ["{{base_url}}"],
+              "raw": "{{gateway_url}}/api/products?page=1&limit=5",
+              "host": ["{{gateway_url}}"],
               "path": ["api", "products"],
               "query": [
                 { "key": "page", "value": "1" },
@@ -38,7 +112,7 @@
           }
         },
         {
-          "name": "POST /api/products - Tạo sản phẩm hợp lệ",
+          "name": "POST /api/products - Tạo sản phẩm (Xóa cache)",
           "request": {
             "method": "POST",
             "header": [
@@ -49,8 +123,8 @@
               "raw": "{\n  \"name\": \"Test Product\",\n  \"price\": 100,\n  \"stock\": 10,\n  \"description\": \"Sản phẩm test\"\n}"
             },
             "url": {
-              "raw": "{{base_url}}/api/products",
-              "host": ["{{base_url}}"],
+              "raw": "{{gateway_url}}/api/products",
+              "host": ["{{gateway_url}}"],
               "path": ["api", "products"]
             }
           }
@@ -67,8 +141,8 @@
               "raw": "{\n  \"name\": \"\",\n  \"price\": -1\n}"
             },
             "url": {
-              "raw": "{{base_url}}/api/products",
-              "host": ["{{base_url}}"],
+              "raw": "{{gateway_url}}/api/products",
+              "host": ["{{gateway_url}}"],
               "path": ["api", "products"]
             }
           }
@@ -79,8 +153,8 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/api/products/999",
-              "host": ["{{base_url}}"],
+              "raw": "{{gateway_url}}/api/products/999",
+              "host": ["{{gateway_url}}"],
               "path": ["api", "products", "999"]
             }
           }
@@ -91,8 +165,8 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/api/products?search=iphone&minPrice=20000000",
-              "host": ["{{base_url}}"],
+              "raw": "{{gateway_url}}/api/products?search=iphone&minPrice=20000000",
+              "host": ["{{gateway_url}}"],
               "path": ["api", "products"],
               "query": [
                 { "key": "search", "value": "iphone" },
@@ -107,8 +181,8 @@
             "method": "DELETE",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/api/products/1",
-              "host": ["{{base_url}}"],
+              "raw": "{{gateway_url}}/api/products/1",
+              "host": ["{{gateway_url}}"],
               "path": ["api", "products", "1"]
             }
           }
@@ -116,14 +190,15 @@
       ]
     },
     {
-      "name": "Orders",
+      "name": "3. Orders Service (Yêu cầu 2: Cần JWT Token)",
       "item": [
         {
-          "name": "POST /api/orders - Tạo đơn hàng",
+          "name": "POST /api/orders - Tạo đơn hàng (Có JWT Bearer Token)",
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
             ],
             "body": {
               "mode": "raw",
@@ -137,10 +212,30 @@
           }
         },
         {
+          "name": "POST /api/orders - Thất bại khi chưa đăng nhập (401)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": 1,\n  \"customerName\": \"Nguyễn Thái Tuấn\",\n  \"items\": []\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/api/orders",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "orders"]
+            }
+          }
+        },
+        {
           "name": "GET /api/orders/customer/:customerId - Lấy đơn hàng theo khách hàng",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+            ],
             "url": {
               "raw": "{{gateway_url}}/api/orders/customer/1?page=1&limit=10",
               "host": ["{{gateway_url}}"],
@@ -157,7 +252,8 @@
           "request": {
             "method": "PUT",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
             ],
             "body": {
               "mode": "raw",
@@ -167,47 +263,6 @@
               "raw": "{{gateway_url}}/api/orders/ORDER_ID/status",
               "host": ["{{gateway_url}}"],
               "path": ["api", "orders", "ORDER_ID", "status"]
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "Auth",
-      "item": [
-        {
-          "name": "POST /api/auth/register",
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"password123\",\n  \"name\": \"Nguyen Thai Tuan\"\n}"
-            },
-            "url": {
-              "raw": "{{gateway_url}}/api/auth/register",
-              "host": ["{{gateway_url}}"],
-              "path": ["api", "auth", "register"]
-            }
-          }
-        },
-        {
-          "name": "POST /api/auth/login",
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"password123\"\n}"
-            },
-            "url": {
-              "raw": "{{gateway_url}}/api/auth/login",
-              "host": ["{{gateway_url}}"],
-              "path": ["api", "auth", "login"]
             }
           }
         }

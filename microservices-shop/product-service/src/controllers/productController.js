@@ -1,9 +1,23 @@
 // src/controllers/productController.js
 const { PrismaClient } = require("@prisma/client");
+const redis = require("../config/redis");
 const prisma = new PrismaClient();
 
+// Helper: Xóa cache sản phẩm trong Redis
+const clearProductCache = async () => {
+  if (!redis) return;
+  try {
+    const keys = await redis.keys("products:*");
+    if (keys.length > 0) {
+      await redis.del(...keys);
+    }
+  } catch (err) {
+    console.warn("⚠️ Không thể xóa cache Redis:", err.message);
+  }
+};
+
 // ──────────────────────────────────
-// GET /api/products — Lấy danh sách có phân trang, lọc, sắp xếp
+// GET /api/products — Lấy danh sách có phân trang, lọc, sắp xếp (Có Cache Redis 5 phút)
 // ──────────────────────────────────
 const getProducts = async (req, res, next) => {
   try {
@@ -18,6 +32,23 @@ const getProducts = async (req, res, next) => {
       maxPrice,
       inStock
     } = req.query;
+
+    const cacheKey = `products:${page}:${limit}:${search}:${category || ""}:${sortBy}:${order}:${minPrice || ""}:${maxPrice || ""}:${inStock || ""}`;
+
+    // Kiểm tra cache Redis
+    if (redis) {
+      try {
+        const cachedData = await redis.get(cacheKey);
+        if (cachedData) {
+          return res.json({
+            ...JSON.parse(cachedData),
+            source: "cache"
+          });
+        }
+      } catch (cacheErr) {
+        console.warn("⚠️ Đọc cache Redis lỗi:", cacheErr.message);
+      }
+    }
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
@@ -47,7 +78,7 @@ const getProducts = async (req, res, next) => {
       prisma.product.count({ where }),
     ]);
 
-    res.json({
+    const responsePayload = {
       success: true,
       data: products,
       pagination: {
@@ -56,6 +87,20 @@ const getProducts = async (req, res, next) => {
         limit: parseInt(limit),
         totalPages: Math.ceil(total / parseInt(limit))
       }
+    };
+
+    // Lưu cache 5 phút (300 giây)
+    if (redis) {
+      try {
+        await redis.setex(cacheKey, 300, JSON.stringify(responsePayload));
+      } catch (cacheErr) {
+        console.warn("⚠️ Ghi cache Redis lỗi:", cacheErr.message);
+      }
+    }
+
+    res.json({
+      ...responsePayload,
+      source: "database"
     });
   } catch (error) {
     next(error); // Chuyển lỗi sang errorHandler
@@ -79,7 +124,7 @@ const getProductById = async (req, res, next) => {
 };
 
 // ──────────────────────────────────
-// POST /api/products
+// POST /api/products — Xóa cache khi thêm mới
 // ──────────────────────────────────
 const createProduct = async (req, res, next) => {
   try {
@@ -89,6 +134,8 @@ const createProduct = async (req, res, next) => {
       data: { name, slug, price, description, stock, imageUrl, categoryId },
       include: { category: true }
     });
+
+    await clearProductCache();
     res.status(201).json({ success: true, data: product, message: "Tạo sản phẩm thành công" });
   } catch (error) {
     next(error);
@@ -96,7 +143,7 @@ const createProduct = async (req, res, next) => {
 };
 
 // ──────────────────────────────────
-// PUT /api/products/:id
+// PUT /api/products/:id — Xóa cache khi cập nhật
 // ──────────────────────────────────
 const updateProduct = async (req, res, next) => {
   try {
@@ -105,6 +152,8 @@ const updateProduct = async (req, res, next) => {
       data: req.body,
       include: { category: true }
     });
+
+    await clearProductCache();
     res.json({ success: true, data: product, message: "Cập nhật thành công" });
   } catch (error) {
     next(error);
@@ -112,7 +161,7 @@ const updateProduct = async (req, res, next) => {
 };
 
 // ──────────────────────────────────
-// DELETE /api/products/:id (Soft delete)
+// DELETE /api/products/:id (Soft delete) — Xóa cache khi xóa
 // ──────────────────────────────────
 const deleteProduct = async (req, res, next) => {
   try {
@@ -120,6 +169,8 @@ const deleteProduct = async (req, res, next) => {
       where: { id: parseInt(req.params.id) },
       data: { isActive: false } // Soft delete — không xoá thật
     });
+
+    await clearProductCache();
     res.json({ success: true, message: "Đã ẩn sản phẩm thành công" });
   } catch (error) {
     next(error);
